@@ -109,3 +109,40 @@ def payload_hash_treasury(to_addr: str, amount_wei: int, memo_hex: str) -> str:
     _norm_hex_addr(to_addr)
     raw = encode_abi_treasury_payload(to_addr, amount_wei, memo)
     return "0x" + _keccak256(raw).hex()
+
+
+def payload_hash_spawn(parent_venture_id: int, manifest_hex: str) -> str:
+    m = _norm_bytes32_hex(manifest_hex)
+    raw = encode_abi_spawn_payload(parent_venture_id, m)
+    return "0x" + _keccak256(raw).hex()
+
+
+@dataclass
+class DevaVentureRow:
+    venture_id: int
+    lead: str
+    phase: int
+    milestone_cursor: int
+    milestone_target: int
+    blueprint: str
+    updated_at: float
+
+
+@dataclass
+class DevaProposalRow:
+    proposal_id: int
+    p_class: int
+    proposer: str
+    yes_weight: int
+    no_weight: int
+    quorum_required: int
+    executed: bool
+    cancelled: bool
+    payload_hash: str
+    created_ts: float = 0.0
+    voting_ends_ts: float = 0.0
+    execute_after_ts: float = 0.0
+
+
+@dataclass
+class DevaLaneRow:
