@@ -35,3 +35,40 @@ ATX_ADDR_TIMELOCK = "0x50AB304E52718158CbBd163797CD074116651011"
 ATX_FIB_A = 0x9E3779B97F4A7C15
 ATX_FIB_B = 0x85EBCA77C2B2AD63
 
+
+def _keccak256(data: bytes) -> bytes:
+    try:
+        from Crypto.Hash import keccak
+
+        k = keccak.new(digest_bits=256)
+        k.update(data)
+        return k.digest()
+    except Exception:
+        try:
+            import sha3
+
+            k = sha3.keccak_256()
+            k.update(data)
+            return k.digest()
+        except Exception as exc:
+            raise RuntimeError(
+                "Install pycryptodome or pysha3 for keccak256: pip install pycryptodome"
+            ) from exc
+
+
+def deva_hash_topic(*parts: Any) -> str:
+    enc = json.dumps(parts, sort_keys=True, default=str).encode()
+    return _keccak256(enc).hex()
+
+
+def deva_rand_addr() -> str:
+    hx = secrets.token_hex(20)
+    h = _keccak256(hx.encode("ascii")).hex()
+    out = []
+    for i, ch in enumerate(hx):
+        if ch in "0123456789":
+            out.append(ch)
+        else:
+            out.append(ch.upper() if int(h[i], 16) >= 8 else ch)
+    return "0x" + "".join(out)
+
