@@ -72,3 +72,40 @@ def deva_rand_addr() -> str:
             out.append(ch.upper() if int(h[i], 16) >= 8 else ch)
     return "0x" + "".join(out)
 
+
+def _norm_hex_addr(s: str) -> str:
+    if not s.startswith("0x") or len(s) != 42:
+        raise ValueError("address must be 0x + 40 hex chars")
+    int(s[2:], 16)  # validate
+    return s
+
+
+def _norm_bytes32_hex(s: str) -> bytes:
+    h = s[2:] if s.startswith("0x") else s
+    if len(h) != 64:
+        raise ValueError("bytes32 must be 64 hex chars")
+    return bytes.fromhex(h)
+
+
+def encode_abi_treasury_payload(to_addr: str, amount_wei: int, memo32: bytes) -> bytes:
+    """Matches Solidity abi.encode(address,uint256,bytes32)."""
+    addr = bytes.fromhex(to_addr[2:].lower())
+    if len(addr) != 20:
+        raise ValueError("bad address")
+    if len(memo32) != 32:
+        raise ValueError("memo must be 32 bytes")
+    return (b"\x00" * 12 + addr) + amount_wei.to_bytes(32, "big") + memo32
+
+
+def encode_abi_spawn_payload(parent_venture_id: int, manifest32: bytes) -> bytes:
+    """Matches Solidity abi.encode(uint256,bytes32)."""
+    if len(manifest32) != 32:
+        raise ValueError("manifest must be 32 bytes")
+    return parent_venture_id.to_bytes(32, "big") + manifest32
+
+
+def payload_hash_treasury(to_addr: str, amount_wei: int, memo_hex: str) -> str:
+    memo = _norm_bytes32_hex(memo_hex)
+    _norm_hex_addr(to_addr)
+    raw = encode_abi_treasury_payload(to_addr, amount_wei, memo)
+    return "0x" + _keccak256(raw).hex()
