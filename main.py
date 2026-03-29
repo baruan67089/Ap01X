@@ -146,3 +146,40 @@ class DevaProposalRow:
 
 @dataclass
 class DevaLaneRow:
+    lane_id: int
+    venture_id: int
+    buffer_cap_wei: int
+
+
+@dataclass
+class DevaApplicationRow:
+    application_id: int
+    applicant: str
+    pitch_hash: str
+    decided: bool
+    accepted: bool
+
+
+@dataclass
+class DevaState:
+    ventures: Dict[int, DevaVentureRow] = field(default_factory=dict)
+    proposals: Dict[int, DevaProposalRow] = field(default_factory=dict)
+    lanes: Dict[int, DevaLaneRow] = field(default_factory=dict)
+    council: Dict[int, str] = field(default_factory=dict)
+    applications: Dict[int, DevaApplicationRow] = field(default_factory=dict)
+    proposal_votes: Dict[str, bool] = field(default_factory=dict)
+    treasury_wei: int = 0
+    notes: List[str] = field(default_factory=list)
+
+
+def _vote_key(pid: int, voter: str) -> str:
+    return f"{pid}:{voter.lower()}"
+
+
+class Ap01XCore:
+    VOTING_PERIOD_SEC = 3 * 24 * 3600
+    TIMELOCK_PERIOD_SEC = 24 * 3600
+
+    def __init__(self, root: Path):
+        self.root = root.resolve()
+        self.path = self.root / "ap01x_deva_state.json"
