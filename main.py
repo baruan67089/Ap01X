@@ -257,3 +257,40 @@ class Ap01XCore:
             blueprint=blueprint,
             updated_at=time.time(),
         )
+        self._append_note(f"venture_seed {vid} lead={lead}")
+        self._save()
+        return vid
+
+    def bind_lane(self, lane_id: int, venture_id: int, cap_wei: int) -> None:
+        if lane_id in self.state.lanes:
+            raise KeyError("lane already bound")
+        if venture_id not in self.state.ventures:
+            raise KeyError("unknown venture_id")
+        if cap_wei <= 0:
+            raise ValueError("cap_wei must be positive")
+        self.state.lanes[lane_id] = DevaLaneRow(
+            lane_id=lane_id, venture_id=venture_id, buffer_cap_wei=cap_wei
+        )
+        self._append_note(f"lane_bind {lane_id} -> venture {venture_id}")
+        self._save()
+
+    def council_add(self, seat_id: int, addr: str) -> None:
+        if not (0 <= seat_id < 64):
+            raise ValueError("seat_id must be 0..63")
+        _norm_hex_addr(addr)
+        if seat_id in self.state.council:
+            raise KeyError("seat already filled")
+        self.state.council[seat_id] = addr
+        self._append_note(f"council_add seat={seat_id} {addr}")
+        self._save()
+
+    def council_clear(self, seat_id: int) -> None:
+        if seat_id not in self.state.council:
+            raise KeyError("seat empty")
+        del self.state.council[seat_id]
+        self._append_note(f"council_clear seat={seat_id}")
+        self._save()
+
+    def council_count(self) -> int:
+        return len(self.state.council)
+
