@@ -442,3 +442,40 @@ def deva_cli() -> None:
     sp = sub.add_parser("note", help="append a note")
     sp.add_argument("text")
 
+    sp = sub.add_parser("treasury", help="add wei to treasury (negative allowed if balance ok)")
+    sp.add_argument("wei", type=int)
+
+    sp = sub.add_parser("venture", help="seed a venture")
+    sp.add_argument("lead")
+    sp.add_argument("blueprint")
+    sp.add_argument("target", type=int)
+
+    sp = sub.add_parser("lane", help="bind cohort lane to venture")
+    sp.add_argument("lane_id", type=int)
+    sp.add_argument("venture_id", type=int)
+    sp.add_argument("cap", type=int)
+
+    sub.add_parser("dump", help="print full JSON state")
+
+    sp = sub.add_parser("metric", help="deterministic mix: (x*(n+3)+A)^B mod 2^64")
+    sp.add_argument("n", type=int)
+    sp.add_argument("x", type=int)
+
+    sp = sub.add_parser("council-add", help="assign council seat (0..63)")
+    sp.add_argument("seat_id", type=int)
+    sp.add_argument("addr")
+
+    sp = sub.add_parser("council-clear", help="remove council seat")
+    sp.add_argument("seat_id", type=int)
+
+    sub.add_parser("council-list", help="list seated council")
+
+    sp = sub.add_parser("proposal-create", help="new proposal (proposer must be council)")
+    sp.add_argument("p_class", type=int, help="0=treasury 1=gov 2=incubator 3=spawn 4=emergency")
+    sp.add_argument("proposer")
+    sp.add_argument("payload_hash")
+
+    sp = sub.add_parser("proposal-vote")
+    sp.add_argument("proposal_id", type=int)
+    sp.add_argument("voter")
+    sp.add_argument("support", type=int, choices=(0, 1))
