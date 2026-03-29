@@ -331,3 +331,40 @@ class Ap01XCore:
 
     def proposal_vote(self, proposal_id: int, voter: str, support: bool) -> None:
         if proposal_id not in self.state.proposals:
+            raise KeyError("unknown proposal")
+        p = self.state.proposals[proposal_id]
+        if p.cancelled or p.executed:
+            raise ValueError("proposal closed")
+        now = time.time()
+        if now > p.voting_ends_ts:
+            raise ValueError("voting ended")
+        vk = _vote_key(proposal_id, voter)
+        if vk in self.state.proposal_votes:
+            raise ValueError("already voted")
+        if voter.lower() not in {a.lower() for a in self.state.council.values()}:
+            raise ValueError("voter must be council")
+        self.state.proposal_votes[vk] = True
+        if support:
+            p.yes_weight += 1
+        else:
+            p.no_weight += 1
+        self._append_note(f"proposal_vote id={proposal_id} support={support}")
+        self._save()
+
+    def proposal_queue(self, proposal_id: int) -> None:
+        if proposal_id not in self.state.proposals:
+            raise KeyError("unknown proposal")
+        p = self.state.proposals[proposal_id]
+        if p.cancelled or p.executed:
+            raise ValueError("proposal closed")
+        now = time.time()
+        if now <= p.voting_ends_ts:
+            raise ValueError("voting still active")
+        if p.yes_weight < p.quorum_required:
+            raise ValueError("quorum not met")
+        if p.yes_weight <= p.no_weight:
+            raise ValueError("not passing")
+        if p.execute_after_ts > 0:
+            raise ValueError("already queued")
+        p.execute_after_ts = now + self.TIMELOCK_PERIOD_SEC
+        self._append_note(f"proposal_queue id={proposal_id} execute_after={p.execute_after_ts}")
