@@ -294,3 +294,40 @@ class Ap01XCore:
     def council_count(self) -> int:
         return len(self.state.council)
 
+    def _quorum_required(self) -> int:
+        n = self.council_count()
+        if n == 0:
+            return 1
+        q = max(1, (n * 2) // 3)
+        return q
+
+    def proposal_create(self, p_class: int, proposer: str, payload_hash: str) -> int:
+        _norm_hex_addr(proposer)
+        ph = payload_hash.lower()
+        if not ph.startswith("0x") or len(ph) != 66:
+            raise ValueError("payload_hash must be bytes32 hex")
+        int(ph[2:], 16)
+        if proposer.lower() not in {a.lower() for a in self.state.council.values()}:
+            raise ValueError("proposer must be a seated council member")
+        pid = max(self.state.proposals.keys(), default=0) + 1
+        now = time.time()
+        self.state.proposals[pid] = DevaProposalRow(
+            proposal_id=pid,
+            p_class=p_class,
+            proposer=proposer,
+            yes_weight=0,
+            no_weight=0,
+            quorum_required=self._quorum_required(),
+            executed=False,
+            cancelled=False,
+            payload_hash=payload_hash,
+            created_ts=now,
+            voting_ends_ts=now + self.VOTING_PERIOD_SEC,
+            execute_after_ts=0.0,
+        )
+        self._append_note(f"proposal_create id={pid} class={p_class}")
+        self._save()
+        return pid
+
+    def proposal_vote(self, proposal_id: int, voter: str, support: bool) -> None:
+        if proposal_id not in self.state.proposals:
