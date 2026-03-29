@@ -368,3 +368,40 @@ class Ap01XCore:
             raise ValueError("already queued")
         p.execute_after_ts = now + self.TIMELOCK_PERIOD_SEC
         self._append_note(f"proposal_queue id={proposal_id} execute_after={p.execute_after_ts}")
+        self._save()
+
+    def application_apply(self, applicant: str, pitch_hash: str) -> int:
+        _norm_hex_addr(applicant)
+        _norm_bytes32_hex(pitch_hash)
+        aid = max(self.state.applications.keys(), default=0) + 1
+        self.state.applications[aid] = DevaApplicationRow(
+            application_id=aid,
+            applicant=applicant,
+            pitch_hash=pitch_hash,
+            decided=False,
+            accepted=False,
+        )
+        self._append_note(f"incubator_apply id={aid}")
+        self._save()
+        return aid
+
+    def application_decide(self, application_id: int, accepted: bool) -> None:
+        if application_id not in self.state.applications:
+            raise KeyError("unknown application")
+        a = self.state.applications[application_id]
+        if a.decided:
+            raise ValueError("already decided")
+        a.decided = True
+        a.accepted = accepted
+        self._append_note(f"incubator_decide id={application_id} accepted={accepted}")
+        self._save()
+
+    def deva_metric(self, n: int, x: int) -> int:
+        """Deterministic mixing function (replaces deva_metric_0..N)."""
+        if n < 0:
+            raise ValueError("n must be non-negative")
+        return int((x * (n + 3) + ATX_FIB_A) ^ ATX_FIB_B) & 0xFFFFFFFFFFFFFFFF
+
+    def export_holss_sync(self) -> dict:
+        """Shape compatible with Holss_Sync/index.html localStorage key 'holss_sync'."""
+        ventures_out = {}
