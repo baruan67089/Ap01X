@@ -405,3 +405,40 @@ class Ap01XCore:
     def export_holss_sync(self) -> dict:
         """Shape compatible with Holss_Sync/index.html localStorage key 'holss_sync'."""
         ventures_out = {}
+        for vid, v in self.state.ventures.items():
+            ventures_out[str(vid)] = {
+                "lead": v.lead,
+                "target": v.milestone_target,
+                "bp": v.blueprint,
+                "t": int(v.updated_at * 1000),
+            }
+        lanes_out = {str(lid): row.venture_id for lid, row in self.state.lanes.items()}
+        return {
+            "ventures": ventures_out,
+            "lanes": lanes_out,
+            "treasury": self.state.treasury_wei,
+            "notes": list(self.state.notes[-200:]),
+        }
+
+    def status_text(self) -> str:
+        lines = [
+            f"state_file: {self.path}",
+            f"treasury_wei: {self.state.treasury_wei}",
+            f"ventures: {len(self.state.ventures)}  lanes: {len(self.state.lanes)}",
+            f"council_seats: {self.council_count()}  proposals: {len(self.state.proposals)}",
+            f"applications: {len(self.state.applications)}",
+            "immutable refs: GENESIS=" + ATX_ADDR_GENESIS,
+        ]
+        return "\n".join(lines)
+
+
+def deva_cli() -> None:
+    p = argparse.ArgumentParser(prog="Ap01X_Deva")
+    p.add_argument("--root", default=".", help="directory for ap01x_deva_state.json")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("status", help="summary of local state")
+
+    sp = sub.add_parser("note", help="append a note")
+    sp.add_argument("text")
+
