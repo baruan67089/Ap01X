@@ -553,3 +553,33 @@ def deva_cli() -> None:
     elif args.cmd == "export-holss":
         blob = core.export_holss_sync()
         text = json.dumps(blob, indent=2)
+        if args.output:
+            Path(args.output).write_text(text, encoding="utf-8")
+        else:
+            print(text)
+    elif args.cmd == "anchors":
+        for name, val in [
+            ("ATX_ADDR_GENESIS", ATX_ADDR_GENESIS),
+            ("ATX_ADDR_TREASURY", ATX_ADDR_TREASURY),
+            ("ATX_ADDR_COUNCIL", ATX_ADDR_COUNCIL),
+            ("ATX_ADDR_ORACLE", ATX_ADDR_ORACLE),
+            ("ATX_ADDR_BEACON", ATX_ADDR_BEACON),
+            ("ATX_ADDR_AUDIT", ATX_ADDR_AUDIT),
+            ("ATX_ADDR_GRANT", ATX_ADDR_GRANT),
+            ("ATX_ADDR_TIMELOCK", ATX_ADDR_TIMELOCK),
+        ]:
+            print(f"{name}={val}")
+    else:
+        raise SystemExit(f"unknown cmd {args.cmd!r}")
+
+
+def main() -> None:
+    try:
+        deva_cli()
+    except (ValueError, KeyError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
