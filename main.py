@@ -183,3 +183,40 @@ class Ap01XCore:
     def __init__(self, root: Path):
         self.root = root.resolve()
         self.path = self.root / "ap01x_deva_state.json"
+        self.state = DevaState()
+        self._load()
+
+    def _append_note(self, text: str) -> None:
+        self.state.notes.append(f"{time.time():.3f} | {text}")
+
+    def _load(self) -> None:
+        if not self.path.exists():
+            self._bootstrap()
+            return
+        data = json.loads(self.path.read_text(encoding="utf-8"))
+        self.state.treasury_wei = int(data.get("treasury_wei", 0))
+        for k, v in data.get("ventures", {}).items():
+            self.state.ventures[int(k)] = DevaVentureRow(**v)
+        for k, v in data.get("proposals", {}).items():
+            pv = dict(v)
+            pv.setdefault("created_ts", 0.0)
+            pv.setdefault("voting_ends_ts", 0.0)
+            pv.setdefault("execute_after_ts", 0.0)
+            self.state.proposals[int(k)] = DevaProposalRow(**pv)
+        for k, v in data.get("lanes", {}).items():
+            self.state.lanes[int(k)] = DevaLaneRow(**v)
+        self.state.council = {int(k): str(v) for k, v in data.get("council", {}).items()}
+        for k, v in data.get("applications", {}).items():
+            self.state.applications[int(k)] = DevaApplicationRow(**v)
+        self.state.proposal_votes = {
+            str(k): bool(v) for k, v in data.get("proposal_votes", {}).items()
+        }
+        self.state.notes = list(data.get("notes", []))
+
+    def _bootstrap(self) -> None:
+        self._append_note("bootstrap: empty council (use council-add to mirror on-chain seats)")
+        self._save()
+
+    def _save(self) -> None:
+        self.root.mkdir(parents=True, exist_ok=True)
+        payload = {
