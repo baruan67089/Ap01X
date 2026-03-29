@@ -220,3 +220,40 @@ class Ap01XCore:
     def _save(self) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
         payload = {
+            "treasury_wei": self.state.treasury_wei,
+            "ventures": {str(k): asdict(v) for k, v in self.state.ventures.items()},
+            "proposals": {str(k): asdict(v) for k, v in self.state.proposals.items()},
+            "lanes": {str(k): asdict(v) for k, v in self.state.lanes.items()},
+            "council": {str(k): v for k, v in self.state.council.items()},
+            "applications": {str(k): asdict(v) for k, v in self.state.applications.items()},
+            "proposal_votes": dict(self.state.proposal_votes),
+            "notes": self.state.notes[-400:],
+        }
+        self.path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    def note(self, text: str) -> None:
+        self._append_note(text)
+        self._save()
+
+    def treasury_delta(self, wei: int) -> None:
+        if self.state.treasury_wei + wei < 0:
+            raise ValueError("treasury would underflow")
+        self.state.treasury_wei += wei
+        self._append_note(f"treasury {wei:+d} wei")
+        self._save()
+
+    def seed_venture(self, lead: str, blueprint: str, target: int) -> int:
+        _norm_hex_addr(lead)
+        _norm_bytes32_hex(blueprint)
+        if not (1 <= target <= 96):
+            raise ValueError("milestone target must be 1..96")
+        vid = max(self.state.ventures.keys(), default=0) + 1
+        self.state.ventures[vid] = DevaVentureRow(
+            venture_id=vid,
+            lead=lead,
+            phase=2,
+            milestone_cursor=0,
+            milestone_target=target,
+            blueprint=blueprint,
+            updated_at=time.time(),
+        )
