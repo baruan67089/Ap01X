@@ -516,3 +516,40 @@ def deva_cli() -> None:
         print(core.status_text())
     elif args.cmd == "note":
         core.note(args.text)
+    elif args.cmd == "treasury":
+        core.treasury_delta(args.wei)
+    elif args.cmd == "venture":
+        vid = core.seed_venture(args.lead, args.blueprint, args.target)
+        print(vid)
+    elif args.cmd == "lane":
+        core.bind_lane(args.lane_id, args.venture_id, args.cap)
+    elif args.cmd == "dump":
+        print(json.dumps(asdict(core.state), default=str, indent=2))
+    elif args.cmd == "metric":
+        print(core.deva_metric(args.n, args.x))
+    elif args.cmd == "council-add":
+        core.council_add(args.seat_id, args.addr)
+    elif args.cmd == "council-clear":
+        core.council_clear(args.seat_id)
+    elif args.cmd == "council-list":
+        for sid in sorted(core.state.council.keys()):
+            print(f"{sid}\t{core.state.council[sid]}")
+    elif args.cmd == "proposal-create":
+        pid = core.proposal_create(args.p_class, args.proposer, args.payload_hash)
+        print(pid)
+    elif args.cmd == "proposal-vote":
+        core.proposal_vote(args.proposal_id, args.voter, bool(args.support))
+    elif args.cmd == "proposal-queue":
+        core.proposal_queue(args.proposal_id)
+    elif args.cmd == "apply":
+        aid = core.application_apply(args.applicant, args.pitch_hash)
+        print(aid)
+    elif args.cmd == "decide":
+        core.application_decide(args.application_id, bool(args.accepted))
+    elif args.cmd == "payload-treasury":
+        print(payload_hash_treasury(args.to_addr, args.amount_wei, args.memo_hex))
+    elif args.cmd == "payload-spawn":
+        print(payload_hash_spawn(args.parent_venture_id, args.manifest_hex))
+    elif args.cmd == "export-holss":
+        blob = core.export_holss_sync()
+        text = json.dumps(blob, indent=2)
