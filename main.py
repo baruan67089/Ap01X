@@ -479,3 +479,40 @@ def deva_cli() -> None:
     sp.add_argument("proposal_id", type=int)
     sp.add_argument("voter")
     sp.add_argument("support", type=int, choices=(0, 1))
+
+    sp = sub.add_parser("proposal-queue", help="queue after voting period (local clock)")
+    sp.add_argument("proposal_id", type=int)
+
+    sp = sub.add_parser("apply", help="incubator application")
+    sp.add_argument("applicant")
+    sp.add_argument("pitch_hash")
+
+    sp = sub.add_parser("decide", help="curator decision on application")
+    sp.add_argument("application_id", type=int)
+    sp.add_argument("accepted", type=int, choices=(0, 1))
+
+    sp = sub.add_parser("payload-treasury", help="bytes32 keccak for ATX_executeTreasuryProposal")
+    sp.add_argument("to_addr")
+    sp.add_argument("amount_wei", type=int)
+    sp.add_argument("memo_hex")
+
+    sp = sub.add_parser("payload-spawn", help="bytes32 keccak for ATX_executeSpawnProposal")
+    sp.add_argument("parent_venture_id", type=int)
+    sp.add_argument("manifest_hex")
+
+    sp = sub.add_parser("export-holss", help="print Holss_Sync-shaped JSON on stdout")
+    sp.add_argument(
+        "-o",
+        "--output",
+        help="optional file path to write JSON",
+    )
+
+    sp = sub.add_parser("anchors", help="print AppaTimoX immutable address constants")
+
+    args = p.parse_args()
+    core = Ap01XCore(Path(args.root))
+
+    if args.cmd == "status":
+        print(core.status_text())
+    elif args.cmd == "note":
+        core.note(args.text)
